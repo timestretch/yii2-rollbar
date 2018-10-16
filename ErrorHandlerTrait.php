@@ -23,6 +23,7 @@ trait ErrorHandlerTrait
      * }
      */
     public $payloadDataCallback;
+    public $ignoreExceptionCallback;
 
     public function logException($exception)
     {
@@ -89,6 +90,18 @@ trait ErrorHandlerTrait
         // Check if an error coming from handleError() should be ignored.
         if ($exception instanceof ErrorException && Rollbar::logger()->shouldIgnoreError($exception->getCode())) {
             return;
+        }
+
+        if (isset($this->ignoreExceptionCallback)) {
+        
+            if (!is_callable($this->ignoreExceptionCallback)) {
+                throw new \Exception('Incorrect callback provided');
+            }
+            
+            $ignoreException = call_user_func($this->ignoreExceptionCallback, $exception);
+            if ($ignoreException) {
+                return;
+            }
         }
 
         $extra = $this->getPayloadData($exception);
