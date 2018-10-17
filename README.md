@@ -70,6 +70,25 @@ Usage
  ],
  ```
 
+0. To use a callback to conditionally ignore exceptions, add `ignoreExceptionCallback` callback to *global* `main.php` config file:
+ ```php
+ 'errorHandler' => [
+     'class' => 'baibaratsky\yii\rollbar\web\ErrorHandler',
+     'ignoreExceptionCallback' => function ($exception) {
+         if (in_array($exception->getMessage(), [
+                 'SQLSTATE[HY000] [2002] Connection timed out',
+                 'SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo failed: Name or service not known'
+             ])) {
+             return true;
+         } else {
+             return false;
+         }
+     },            
+ ],        
+ 'rollbar' => [
+     'class' => 'baibaratsky\yii\rollbar\Rollbar',
+ ...
+ ```
 
 Payload from your exceptions
 ----------------------------
