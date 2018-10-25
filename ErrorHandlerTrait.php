@@ -73,35 +73,41 @@ trait ErrorHandlerTrait
 
     protected function logExceptionRollbar($exception)
     {
-        foreach (Yii::$app->get($this->rollbarComponentName)->ignoreExceptions as $ignoreRecord) {
-            if ($exception instanceof $ignoreRecord[0]) {
-                $ignoreException = true;
-                foreach (array_slice($ignoreRecord, 1) as $property => $range) {
-                    if (!in_array($exception->$property, $range)) {
-                        $ignoreException = false;
-                        break;
-                    }
-                }
-                if ($ignoreException) {
-                    return;
-                }
-            }
-        }
-        // Check if an error coming from handleError() should be ignored.
-        if ($exception instanceof ErrorException && Rollbar::logger()->shouldIgnoreError($exception->getCode())) {
-            return;
-        }
-
-        if (isset($this->ignoreExceptionCallback)) {
+    	// If we are using callback to ignore exceptions, handle it this way..
+         if (isset($this->ignoreExceptionCallback)) {
         
             if (!is_callable($this->ignoreExceptionCallback)) {
                 throw new \Exception('Incorrect callback provided');
             }
-            
+                        
             $ignoreException = call_user_func($this->ignoreExceptionCallback, $exception);
             if ($ignoreException) {
+            	echo "Exception Ignored. Not sent to rollbar.";
                 return;
             }
+        
+        // Otherwise fall back to the other method to ignore exceptions:
+        } else {
+
+			foreach (Yii::$app->get($this->rollbarComponentName)->ignoreExceptions as $ignoreRecord) {
+				if ($exception instanceof $ignoreRecord[0]) {
+					$ignoreException = true;
+					foreach (array_slice($ignoreRecord, 1) as $property => $range) {
+						if (!in_array($exception->$property, $range)) {
+							$ignoreException = false;
+							break;
+						}
+					}
+					if ($ignoreException) {
+						return;
+					}
+				}
+			}
+        }
+        
+        // Check if an error coming from handleError() should be ignored.
+        if ($exception instanceof ErrorException && Rollbar::logger()->shouldIgnoreError($exception->getCode())) {
+            return;
         }
 
         $extra = $this->getPayloadData($exception);
